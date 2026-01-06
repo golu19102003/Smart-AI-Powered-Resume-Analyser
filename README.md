@@ -1,4 +1,4 @@
-<img width="1879" height="905" alt="image" src="https://github.com/user-attachments/assets/964ab0f6-0d9d-49a6-8f0a-65ca28cb60fa"/>
+<img width="1918" height="1016" alt="Screenshot 2026-01-06 130136" src="https://github.com/user-attachments/assets/eb6dd484-225f-4ca2-8d4c-8eac301b34ab" />
 
 # Smart Resume Analyser – AI Powered Resume Evaluation Platform
 
@@ -11,8 +11,7 @@ Smart Resume Analyser is a web platform designed to help students, freshers, and
 - [Setup & Installation](#setup--installation)
 - [Main Code Sequences & Architecture](#main-code-sequences--architecture)
   - [Frontend (HTML/CSS/JS)](#frontend-htmlcssjs)
-  - [Backend (Node.js/Express/OpenAI)](#backend-nodejsexpressopenai)
-- [Resume Analysis Engine](#resume-analysis-engine)
+  - [Backend (Node.js / Express / OpenAI)](#backend-nodejs--express--openai)
 - [Authentication](#authentication)
 - [AI Chatbot Integration](#ai-chatbot-integration)
 - [Customization](#customization)
@@ -177,16 +176,16 @@ For feedback, contributions, or queries:
 ## Example Screenshots
 
 Dashboard Home
-<img width="1873" height="892" alt="image" src="https://github.com/user-attachments/assets/2e36905b-745d-4265-859b-ab8e8520de50" />
+<img width="1903" height="1079" alt="Screenshot 2026-01-06 130201" src="https://github.com/user-attachments/assets/2c622797-0bb1-448d-a8c3-424c011fc830" />
 
 Resume Upload
-<img width="1879" height="902" alt="image" src="https://github.com/user-attachments/assets/e182589c-a895-481e-9829-5f92126dbb24" />
+<img width="1896" height="1079" alt="Screenshot 2026-01-06 130222" src="https://github.com/user-attachments/assets/3288d901-1a92-45f0-a21a-520828777b2f" />
 
 ATS Score Report
-<img width="1883" height="892" alt="image" src="https://github.com/user-attachments/assets/222718e8-9f16-42fa-af70-9043393b190d" />
+<img width="1904" height="1069" alt="Screenshot 2026-01-06 130239" src="https://github.com/user-attachments/assets/3d9512de-7c2b-4c21-a772-dc9d399ca568" />
 
 AI Suggestions Panel
-<img width="1870" height="885" alt="image" src="https://github.com/user-attachments/assets/f423e3b3-6f08-4710-be0d-00c125abde26" />
+<img width="1895" height="1079" alt="Screenshot 2026-01-06 130248" src="https://github.com/user-attachments/assets/60680d83-00ef-4998-80d8-755a7321292e" />
 
 ---
 
