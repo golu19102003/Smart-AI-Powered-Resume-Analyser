@@ -783,183 +783,102 @@ const readFileContent = async (file: File): Promise<string> => {
   console.log('File type:', file.type);
   console.log('File size:', file.size);
 
-  return new Promise((resolve, reject) => {
-    // For PDF files, we need to use a different approach
-    if (file.type === 'application/pdf') {
-      console.log('Processing PDF file...');
-
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const result = e.target?.result;
-        console.log('FileReader result type:', typeof result);
-
-        // Try to extract text from PDF binary data
-        try {
-          const arrayBuffer = result as ArrayBuffer;
-          const bytes = new Uint8Array(arrayBuffer);
-          console.log('ArrayBuffer length:', arrayBuffer.byteLength);
-
-          // Convert to string first to see what we have
-          const textDecoder = new TextDecoder('utf-8', { fatal: false });
-          let fullText = textDecoder.decode(bytes);
-
-          console.log('Raw PDF text length:', fullText.length);
-          console.log('Raw PDF starts with:', fullText.substring(0, 100));
-
-          // If it starts with %PDF, we need to extract text properly
-          if (fullText.startsWith('%PDF')) {
-            console.log('Detected PDF binary format, attempting text extraction...');
-
-            // Method 1: Look for text between parentheses and in text streams
-            let extractedText = '';
-
-            // Find text between parentheses
-            const parenMatches = fullText.match(/\(([^)]+)\)/g);
-            console.log('Parentheses matches found:', parenMatches?.length || 0);
-            if (parenMatches) {
-              for (const match of parenMatches) {
-                const text = match.slice(1, -1); // Remove parentheses
-                if (text.length > 3 && !text.match(/^[\d\s]+$/)) { // Skip pure numbers and spaces
-                  extractedText += text + ' ';
-                }
-              }
-            }
-
-            // Look for text streams (between BT and ET)
-            const textStreamMatches = fullText.match(/BT\s*([^]*?)ET/g);
-            console.log('Text stream matches found:', textStreamMatches?.length || 0);
-            if (textStreamMatches) {
-              for (const match of textStreamMatches) {
-                const streamText = match.replace(/BT\s*|ET/g, '');
-                // Extract text from the stream
-                const streamMatches = streamText.match(/\(([^)]+)\)/g);
-                if (streamMatches) {
-                  for (const streamMatch of streamMatches) {
-                    const text = streamMatch.slice(1, -1);
-                    if (text.length > 3 && !text.match(/^[\d\s]+$/)) {
-                      extractedText += text + ' ';
-                    }
-                  }
-                }
-              }
-            }
-
-            // Clean up the extracted text
-            const cleanText = extractedText
-              .replace(/\\[0-9]{3}/g, '') // Remove octal escape sequences
-              .replace(/\\[nrtbf()]/g, '') // Remove escape sequences
-              .replace(/\s+/g, ' ') // Normalize whitespace
-              .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
-              .trim();
-
-            console.log('PDF text extraction attempt, length:', cleanText.length);
-            console.log('Sample extracted text:', cleanText.substring(0, 500));
-
-            // If we got meaningful text, use it
-            if (cleanText.length > 50 && !cleanText.startsWith('%PDF')) {
-              console.log('PDF text extraction successful!');
-              resolve(cleanText);
-              return;
-            }
-
-            console.log('PDF text extraction failed, trying alternative extraction methods');
-
-            // Try alternative PDF extraction methods
-            try {
-              // Method 4: Extract readable words more aggressively
-              const wordMatches = fullText.match(/[a-zA-Z]{2,50}/g);
-              console.log('Word matches found:', wordMatches?.length || 0);
-              if (wordMatches && wordMatches.length > 20) {
-                // Filter out PDF-related words and common patterns
-                const pdfWords = ['obj', 'endobj', 'stream', 'endstream', 'xref', 'trailer', 'startxref', 'Catalog', 'Pages', 'Page', 'Contents', 'Font', 'Resources', 'MediaBox', 'CropBox', 'Rotate', 'Parent', 'Kids', 'Count', 'Type', 'Subtype', 'Filter', 'Length', 'Width', 'Height', 'BitsPerComponent', 'ColorSpace', 'DeviceRGB', 'DeviceGray', 'CalRGB', 'CalGray', 'Indexed', 'Separation', 'DeviceN', 'Lab', 'ICCBased', 'Pattern', 'Shading', 'Image', 'Form', 'Group', 'Reference', 'XObject', 'ExtGState', 'ColorSpaceInfo', 'StructParents', 'StructTreeRoot', 'MarkInfo', 'Lang', 'AF', 'AP', 'B', 'BC', 'BG', 'BM', 'CA', 'ca', 'CS', 'D', 'DP', 'Du', 'F', 'FL', 'FontFile', 'FontFile2', 'FontFile3', 'FontDescriptor', 'FontName', 'FontType', 'FontBBox', 'FontMatrix', 'Encoding', 'ToUnicode', 'CIDFontType', 'CIDSystemInfo', 'DW', 'W', 'DW2', 'W2', 'CIDToGIDMap', 'GIDToCIDMap', 'CIDSet', 'EmbeddedFont', 'BaseFont', 'FirstChar', 'LastChar', 'Widths'];
-
-                const filteredWords = wordMatches.filter(word =>
-                  !pdfWords.includes(word) &&
-                  word.length > 2 &&
-                  word.length < 30 &&
-                  !word.match(/^[\d]+$/) &&
-                  !word.match(/^[\W]+$/)
-                );
-
-                console.log('Filtered words count:', filteredWords.length);
-
-                if (filteredWords.length > 10) {
-                  const reconstructedText = filteredWords.join(' ');
-                  console.log('Alternative PDF extraction successful, length:', reconstructedText.length);
-                  console.log('Sample reconstructed text:', reconstructedText.substring(0, 500));
-                  resolve(reconstructedText);
-                  return;
-                }
-              }
-            } catch (altError) {
-              console.error('Alternative PDF extraction failed:', altError);
-            }
-
-            console.log('All PDF extraction methods failed, returning empty string');
-            resolve(''); // Return empty string to trigger proper fallback
-
-          } else {
-            // Not a PDF binary, treat as regular text
-            console.log('Not PDF binary format, treating as text');
-            const cleanText = fullText
-              .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove control characters
-              .replace(/\s+/g, ' ') // Normalize whitespace
-              .replace(/[\uFFFD\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u000B\x0C\u000E\u000F]/g, '') // Remove replacement chars
-              .trim();
-
-            console.log('Non-PDF text extracted, length:', cleanText.length);
-            console.log('Sample non-PDF content:', cleanText.substring(0, 300));
-
-            resolve(cleanText);
-          }
-
-        } catch (error) {
-          console.error('PDF extraction error:', error);
-          reject(new Error('Failed to extract text from PDF'));
+  // For PDF files, use pdfjs-dist library
+  if (file.type === 'application/pdf') {
+    console.log('Processing PDF file with pdfjs-dist...');
+    
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Configure PDF.js worker - use CDN worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      
+      const { getDocument } = pdfjsLib;
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Load PDF document
+      const loadingTask = getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      
+      let fullText = '';
+      
+      // Extract text from all pages
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      console.log('PDF text extraction successful!');
+      console.log('Extracted text length:', fullText.length);
+      console.log('Sample text:', fullText.substring(0, 200));
+      
+      return fullText.trim();
+    } catch (error) {
+      console.error('PDF parsing error:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // Fallback: try basic text extraction if PDF.js fails
+      try {
+        console.log('Attempting fallback PDF text extraction...');
+        const arrayBuffer = await file.arrayBuffer();
+        const textDecoder = new TextDecoder('utf-8', { fatal: false });
+        const rawText = textDecoder.decode(arrayBuffer);
+        
+        // Extract readable strings from PDF binary
+        const readableText = rawText
+          .replace(/[^\x20-\x7E]/g, ' ') // Keep only printable ASCII
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        if (readableText.length > 100) {
+          console.log('Fallback extraction successful, length:', readableText.length);
+          return readableText;
         }
-      };
-
-      reader.onerror = () => {
-        console.error('FileReader error');
-        reject(new Error('Failed to read file'));
-      };
-
-      reader.readAsArrayBuffer(file);
-
-    } else {
-      // For non-PDF files, use standard text reading
-      console.log('Processing non-PDF file...');
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const result = e.target?.result;
-        console.log('Non-PDF FileReader result type:', typeof result);
-        console.log('Non-PDF result length:', (typeof result === 'string' ? result.length : 'N/A'));
-
-        if (typeof result === 'string') {
-          const cleanText = result
-            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove control characters
-            .replace(/\s+/g, ' ') // Normalize whitespace
-            .replace(/[\uFFFD\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u000B\x0C\u000E\u000F]/g, '') // Remove replacement chars
-            .trim();
-
-          console.log('Non-PDF text extracted, length:', cleanText.length);
-          console.log('Sample non-PDF content:', cleanText.substring(0, 300));
-
-          resolve(cleanText);
-        } else {
-          reject(new Error('Unsupported file type'));
-        }
-      };
-
-      reader.onerror = () => {
-        console.error('Non-PDF FileReader error');
-        reject(new Error('Failed to read file'));
-      };
-
-      reader.readAsText(file);
+      } catch (fallbackError) {
+        console.error('Fallback extraction also failed:', fallbackError);
+      }
+      
+      throw new Error(`Failed to extract text from PDF: ${error.message}`);
     }
+  }
+
+  // For non-PDF files, use standard text reading
+  console.log('Processing non-PDF file...');
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      console.log('Non-PDF FileReader result type:', typeof result);
+      console.log('Non-PDF result length:', (typeof result === 'string' ? result.length : 'N/A'));
+
+      if (typeof result === 'string') {
+        const cleanText = result
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove control characters
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .replace(/[\uFFFD\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u000B\x0C\u000E\u000F]/g, '') // Remove replacement chars
+          .trim();
+
+        console.log('Non-PDF text extracted, length:', cleanText.length);
+        console.log('Sample non-PDF content:', cleanText.substring(0, 300));
+
+        resolve(cleanText);
+      } else {
+        reject(new Error('Unsupported file type'));
+      }
+    };
+
+    reader.onerror = () => {
+      console.error('Non-PDF FileReader error');
+      reject(new Error('Failed to read file'));
+    };
+
+    reader.readAsText(file);
   });
 };
 
